@@ -1,0 +1,24 @@
+{
+  "version": "18.8.3",
+  "file": "src/prompt/attachment-chips.ts",
+  "originalSha256": "2a5d09f82ac4ad73ea659c3529707b27747abfead5808aee83b4146e164b003c",
+  "patchedSha256": "95db43d2ed7af2647cb8eedd07282ddf60add215c7b0deb127560c85adacace0",
+  "operations": [
+    {
+      "before": "\ttype Component,\n\tgetImageDimensions,\n",
+      "after": "\ttype Component,\n\tgetCellDimensions,\n\tgetImageDimensions,\n"
+    },
+    {
+      "before": "\t#native: { chips: readonly ComposerChipDescriptor[]; node: NativeNode } | undefined;\n\n",
+      "after": "\t#native: { chips: readonly ComposerChipDescriptor[]; node: NativeNode } | undefined;\n\t#sixelThumbnails = new WeakMap<ImageContent, { cellWidth: number; cellHeight: number; rows: string[] }>();\n\n"
+    },
+    {
+      "before": "\n\t/** 12x4 thumbnail as Kitty Unicode-placeholder cell rows, centered; any other protocol (or a\n\t *  budget-suppressed image) falls back to a centered icon — direct placements, SIXEL, and\n\t *  iTerm2 output cursor-addressed sequences that cannot be composed into a border row. */\n\t#imageInterior(\n",
+      "after": "\n  /** Kitty placeholders compose as text. Sixel is painted after reserving all four\n   * interior rows, with the cursor restored before the right border is written. */\n\t#imageInterior(\n"
+    },
+    {
+      "before": "\t): string[] {\n\t\tif (dims && TERMINAL.imageProtocol === ImageProtocol.Kitty && getKittyGraphics().unicodePlaceholders) {\n",
+      "after": "\t): string[] {\n\t\tif (dims && TERMINAL.imageProtocol === ImageProtocol.Sixel) {\n\t\t\tconst cells = getCellDimensions();\n\t\t\tconst cached = this.#sixelThumbnails.get(image);\n\t\t\tif (cached?.cellWidth === cells.widthPx && cached.cellHeight === cells.heightPx) return cached.rows;\n\t\t\tconst result = renderImage(image.data, { widthPx: dims.width, heightPx: dims.height }, {\n\t\t\t\tmaxWidthCells: INNER_COLS,\n\t\t\t\tmaxHeightCells: INNER_ROWS,\n\t\t\t});\n\t\t\tif (result?.sequence) {\n\t\t\t\tconst blank = \" \".repeat(INNER_COLS);\n\t\t\t\t// Draw last: subsequent blank interior rows would otherwise erase Sixel pixels.\n\t\t\t\t// DECSC/DECRC preserve the renderer's cursor and the card's horizontal offset.\n\t\t\t\tconst rows = [blank, blank, blank,\n\t\t\t\t\tblank + \"\\x1b7\\x1b[3A\\x1b[12D\" + result.sequence + \"\\x1b8\"];\n\t\t\t\tthis.#sixelThumbnails.set(image, { cellWidth: cells.widthPx, cellHeight: cells.heightPx, rows });\n\t\t\t\treturn rows;\n\t\t\t}\n\t\t}\n\t\tif (dims && TERMINAL.imageProtocol === ImageProtocol.Kitty && getKittyGraphics().unicodePlaceholders) {\n"
+    }
+  ]
+}
